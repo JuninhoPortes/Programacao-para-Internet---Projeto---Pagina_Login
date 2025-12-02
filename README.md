@@ -12,6 +12,8 @@ Ele implementa mensagens claras de erro/sucesso e organiza o código de forma mo
 
 A aplicação foi projetada para rodar localmente com **XAMPP**, utilizando o **MySQL** como banco de dados.
 
+Além do componente Web, o projeto inclui uma **API REST segura**, estruturada em controllers separados, permitindo que futuras aplicações (mobile, dashboards externos, integrações) consumam os dados diretamente.
+
 ---
 
 ## ⚙️ Requisitos
@@ -28,9 +30,9 @@ A aplicação foi projetada para rodar localmente com **XAMPP**, utilizando o **
 ## 🗄️ Banco de Dados
 
 * Banco: **escola**
-* Sistema de gerenciamento: **MySQL (via localhost/phpmyadmin)**
-* Conexão via **PDO** com **prepared statements** para segurança.
-* Arquivo de referência: `app/banco.sql` (inclui criação da tabela e usuário de teste).
+* Sistema: **MySQL (via localhost/phpmyadmin)**
+* Conexão via **PDO** com **prepared statements**
+* Arquivo de referência: `app/banco.sql`
 
 ### Estrutura mínima da tabela `usuarios`
 
@@ -47,7 +49,15 @@ A aplicação foi projetada para rodar localmente com **XAMPP**, utilizando o **
 | data_nascim | VARCHAR      | Data de nascimento               |
 | senha_hash  | VARCHAR      | Senha hasheada (`password_hash`) |
 
-> O arquivo `banco.sql` cria essa estrutura e insere um usuário de teste.
+### Estrutura mínima da tabela `notas`
+
+| Campo         | Tipo         | Comentário                |
+| ------------- | ------------ | ------------------------- |
+| id            | INT PK AI    | Identificador único       |
+| aluno_id      | INT FK       | Relacionado a usuarios.id |
+| nota_final    | DECIMAL(5,2) | Nota final                |
+| status        | VARCHAR(50)  | Aprovado / Reprovado      |
+| data_registro | DATETIME     | Data e hora do registro   |
 
 ---
 
@@ -57,18 +67,22 @@ A aplicação foi projetada para rodar localmente com **XAMPP**, utilizando o **
 | ---------- | ------------- | ------ |
 | 231-000655 | 123456@abcdef | Admin  |
 
-> A senha foi criada com complexidade mínima exigida (letras, números e símbolo).
-
 ---
 
 ## 🧩 Estrutura do Projeto
-
-Ao clonar o repositório, os arquivos estarão organizados da seguinte forma:
 
 ```
 Projeto_teste2/
 ├── app/
 │   └── banco.sql
+├── api/
+│   ├── config.php        
+│   ├── index.php         
+│   ├── Response.php      
+│   ├── Auth.php          
+│   ├── AuthController.php
+│   ├── AlunoController.php
+│   └── NotasController.php
 ├── assets/
 │   ├── css/
 │   │   └── style.css
@@ -76,20 +90,18 @@ Projeto_teste2/
 │       ├── index_script.js
 │       ├── cadastro_script.js
 │       └── dashboard_admin_script.js
-├── public/
-│   ├── autentica.php
-│   ├── conexao.php
-│   ├── dashboard.php
-│   ├── dashboard_aluno.php
-│   ├── dashboard_professor.php
-│   ├── cadastro_usuarios.php
-│   ├── cadastro_sucesso.php
-│   ├── processa_cadastro.php
-│   ├── verifica_sessao.php
-│   ├── sem_permissao.php
-│   ├── logout.php
-├── index.php
-└── README.md
+└── public/
+    ├── autentica.php
+    ├── conexao.php
+    ├── dashboard.php
+    ├── dashboard_aluno.php
+    ├── dashboard_professor.php
+    ├── cadastro_usuarios.php
+    ├── cadastro_sucesso.php
+    ├── processa_cadastro.php
+    ├── verifica_sessao.php
+    ├── sem_permissao.php
+    ├── logout.php
 ```
 
 ---
@@ -98,16 +110,10 @@ Projeto_teste2/
 
 ### 1️⃣ Clonar o Repositório
 
-Abra o **Git Bash** ou terminal dentro da pasta do XAMPP (`htdocs`):
-
 ```bash
 cd C:\xampp\htdocs
 git clone https://github.com/seu-usuario/seu-repositorio.git Projeto_teste2
 ```
-
-> Substitua `seu-usuario/seu-repositorio` pela URL real do seu repositório GitHub.
-
----
 
 ### 2️⃣ Importar o Banco de Dados
 
@@ -115,8 +121,6 @@ git clone https://github.com/seu-usuario/seu-repositorio.git Projeto_teste2
 2. Acesse: [http://localhost/phpmyadmin](http://localhost/phpmyadmin)
 3. Crie um banco chamado **escola**.
 4. Vá em *Importar* → Selecione `app/banco.sql` → *Executar*.
-
----
 
 ### 3️⃣ Configurar Conexão
 
@@ -144,11 +148,9 @@ try {
 ?>
 ```
 
----
-
 ### 4️⃣ Executar o Sistema
 
-No navegador, acesse:
+Acesse:
 
 ```
 http://localhost/Projeto_teste2/index.php
@@ -190,68 +192,79 @@ Faça login com as credenciais de teste.
 * Redireciona para `index.php` se a sessão estiver expirada.
 * Impede acesso de perfis não permitidos (`sem_permissao.php`).
 
-### 🔹 `dashboard.php`
+### 🔹 Dashboards
 
-* Dashboard do administrador.
-* Exibe mensagem de boas-vindas e botões de acesso.
-* Inclui `verifica_sessao.php` para segurança.
-* Usa `dashboard_admin_script.js` para validações.
-
-### 🔹 `dashboard_aluno.php` / `dashboard_professor.php`
-
-* Versões simplificadas para alunos e professores.
-* Contêm estrutura básica com links de navegação e logout.
-* Serão expandidas em entregas futuras.
+* `dashboard.php` – Admin
+* `dashboard_aluno.php`
+* `dashboard_professor.php`
 
 ### 🔹 `logout.php`
 
-* Finaliza sessão com `session_unset()` e `session_destroy()`.
-* Redireciona para `index.php`.
+* Finaliza sessão com segurança.
 
-### 🔹 `sem_permissao.php`
+---
 
-* Página exibida ao tentar acessar conteúdo não autorizado.
-* Mensagem clara e estilizada de “Acesso Negado”.
+## 🌐 API REST — Documentação Oficial
 
-### 🔹 `cadastro_usuarios.php` / `processa_cadastro.php`
+### 🔹 Estrutura da API (`/api/`)
 
-* Permitem cadastrar novos usuários.
-* Armazenam senha com `password_hash`.
-* Exibem confirmação via `cadastro_sucesso.php`.
+* `index.php` – roteador
+* `AuthController.php` – login seguro
+* `AlunoController.php` – dados dos alunos
+* `NotasController.php` – notas e rendimento
+* `Auth.php` – gerencia sessão e usuário logado
+* `Response.php` – respostas JSON padronizadas
+
+### 🔑 Rotas da API
+
+**GET /api/index.php?rota=alunos** – Lista alunos.
+
+**GET /api/index.php?rota=alunos/{id}** – Retorna dados do aluno + notas.
+
+**GET /api/index.php?rota=notas** – Lista todas as notas cadastradas.
 
 ---
 
 ## 🔒 Segurança e Boas Práticas
 
-* **Senha com hash:** `password_hash` e `password_verify`.
-* **Sessão segura:** `session_regenerate_id(true)` após login.
-* **SQL seguro:** consultas com `PDO` e `prepared statements`.
-* **Timeout de sessão:** configurado em `verifica_sessao.php` (padrão: 10 minutos).
-* **Tentativas limitadas de login:** impede brute-force.
-* **Mensagens de erro limpas:** não revelam detalhes sensíveis.
-* **Filtros de entrada e saída:** sanitização e escaping.
+* `password_hash()` e `password_verify()`
+* Sessão regenerada pós-login
+* SQL com prepared statements
+* Controle de sessão em todas as páginas internas
+* Proteção contra brute-force
+* Sanitização de entradas
+* Erros não revelam detalhes sensíveis
 
 ---
 
-## 🔁 Fluxo de Autenticação
+## 🔁 Fluxo de Autenticação (Web)
 
-1. Usuário acessa `index.php` e preenche credenciais.
-2. `autentica.php` valida login e senha:
+1. Usuário envia matrícula + senha
+2. Validado com `password_verify()`
+3. Sessão é criada e ID regenerado
+4. Usuário é redirecionado para o dashboard do seu perfil
+5. Sessão expira após período definido
+6. Logout limpa sessão com segurança
 
-   * ✅ Se válidos → cria sessão → redireciona ao dashboard correto.
-   * ❌ Se inválidos → exibe erro e soma tentativa.
-3. `verifica_sessao.php` protege todas as páginas internas.
-4. Acesso negado → `sem_permissao.php`.
-5. Logout → `logout.php` limpa sessão e retorna ao login.
+---
+
+## 🌐 Fluxo da Autenticação via API
+
+* Cliente (app / JS / serviço externo) envia JSON
+* API busca usuário pela matrícula
+* `password_verify()` compara senha enviada com hash
+* Se válido → retorna dados essenciais
+* Se inválido → retorna HTTP 401
+* Sessão é automaticamente vinculada ao request se necessário
 
 ---
 
 ## 📋 Observações para Professores
 
-* Professores podem logar via **matrícula** ou **CPF**.
-* O sistema identifica automaticamente o perfil e redireciona.
-* Caso o perfil não tenha permissão → `sem_permissao.php`.
-* Perfis futuros (coordenador, secretaria, etc.) podem ser adicionados facilmente via ENUM.
+* Podem logar via matrícula ou CPF
+* Apenas páginas específicas são liberadas
+* Tentativas incorretas são contabilizadas
+* Acesso negado redireciona para `sem_permissao.php`
 
 ---
 
@@ -301,3 +314,4 @@ Para dúvidas, suporte técnico ou aprimoramentos, entre em contato pelo reposit
 ---
 
 > 📖 **Nota final:** Este projeto está em fase inicial. As telas de alunos, professores e administradores são versões básicas que serão evoluídas em futuras entregas, conforme novos módulos forem implementados (relatórios, notas, permissões e cadastros avançados).
+
