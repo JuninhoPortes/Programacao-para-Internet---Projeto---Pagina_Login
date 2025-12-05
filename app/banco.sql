@@ -42,3 +42,16 @@ CREATE TABLE tokens_login (
   FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
   UNIQUE KEY uq_token (token)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabela de notas (ORIGINAL + CAMPO solicitacao)
+DROP TABLE IF EXISTS notas;
+CREATE TABLE notas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    aluno_id INT NOT NULL,
+    disciplina VARCHAR(100) NOT NULL,
+    nota FLOAT NOT NULL,
+    nota_final FLOAT NULL,
+    status ENUM('Aprovado', 'Reprovado') NOT NULL,  -- <<< IMPLEMENTAÇÃO REQUISITADA
+    data_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (aluno_id) REFERENCES usuarios(id) ON DELETE CASCADE
+);
